@@ -51,7 +51,7 @@ func (u *User) Offline() {
 }
 
 func (u *User) SendMessage(user *User, msg string) {
-	user.conn.Write([]byte(msg))
+	user.C <- msg
 }
 
 func (u *User) DoMessage(msg string) {
@@ -60,7 +60,6 @@ func (u *User) DoMessage(msg string) {
 		u.server.mapLock.Lock()
 		for _, user := range u.server.OnlineMap {
 			onlineMsg := "[" + user.Addr + "] " + user.Name + ": " + "is online\n"
-			// u.SendMessage(u, onlineMsg)
 			u.C <- onlineMsg
 		}
 		u.server.mapLock.Unlock()

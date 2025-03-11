@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -52,6 +54,9 @@ func (s *Server) Handler(conn net.Conn) {
 	user := NewUser(conn, s)
 	user.Online()
 
+	// current user is (not) alive
+	isAlive := make(chan bool)
+
 	// receive client's msg
 	go func() {
 		buf := make([]byte, 4096)
@@ -68,8 +73,24 @@ func (s *Server) Handler(conn net.Conn) {
 			msg := string(buf[:n-1])
 
 			user.DoMessage(msg)
+
+			isAlive <- true
 		}
 	}()
+
+	for {
+		select {
+		case <-isAlive:
+			// do nothing to go to next case, then update timer
+		case <-time.After(time.Second * 10):
+			conn.Write([]byte("you are kicked because of timeout\n"))
+
+			conn.Close()
+			close(user.C)
+			// return
+			runtime.Goexit()
+		}
+	}
 }
 
 func (s *Server) Start() {
