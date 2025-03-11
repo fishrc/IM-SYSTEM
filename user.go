@@ -1,6 +1,8 @@
 package main
 
-import "net"
+import (
+	"net"
+)
 
 type User struct {
 	Name   string
@@ -57,11 +59,24 @@ func (u *User) DoMessage(msg string) {
 		// list online users
 		u.server.mapLock.Lock()
 		for _, user := range u.server.OnlineMap {
-			onlineMsg := "[" + user.Addr + "]" + user.Name + ": " + "is online\n"
+			onlineMsg := "[" + user.Addr + "] " + user.Name + ": " + "is online\n"
 			// u.SendMessage(u, onlineMsg)
 			u.C <- onlineMsg
 		}
 		u.server.mapLock.Unlock()
+	} else if len(msg) > 7 && msg[:7] == "rename|" {
+		newName := msg[7:]
+		_, ok := u.server.OnlineMap[newName]
+		if ok {
+			u.C <- "name " + newName + " already exists\n"
+		} else {
+			u.server.mapLock.Lock()
+			delete(u.server.OnlineMap, u.Name)
+			u.Name = newName
+			u.server.OnlineMap[u.Name] = u
+			u.server.mapLock.Unlock()
+			u.C <- "update name: " + newName + "\n"
+		}
 	} else {
 		u.server.BroadCast(u, msg)
 	}
