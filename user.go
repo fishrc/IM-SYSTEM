@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"strings"
 )
 
 type User struct {
@@ -50,10 +51,6 @@ func (u *User) Offline() {
 	u.server.BroadCast(u, "is offline")
 }
 
-func (u *User) SendMessage(user *User, msg string) {
-	user.C <- msg
-}
-
 func (u *User) DoMessage(msg string) {
 	if msg == "who" {
 		// list online users
@@ -75,6 +72,19 @@ func (u *User) DoMessage(msg string) {
 			u.server.OnlineMap[u.Name] = u
 			u.server.mapLock.Unlock()
 			u.C <- "update name: " + newName + "\n"
+		}
+	} else if len(msg) > 3 && msg[:3] == "to|" {
+		remoteName := strings.Split(msg, "|")[1]
+		remoteUser, ok := u.server.OnlineMap[remoteName]
+		if !ok {
+			u.C <- "user " + remoteName + " not exists\n"
+		} else {
+			content := strings.Split(msg, "|")[2]
+			if content == "" {
+				u.C <- "please say something\n"
+			} else {
+				remoteUser.C <- "from " + u.Name + ": " + content + "\n"
+			}
 		}
 	} else {
 		u.server.BroadCast(u, msg)

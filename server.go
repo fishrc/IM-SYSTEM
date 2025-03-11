@@ -44,8 +44,7 @@ func (s *Server) ListenMessage() {
 }
 
 func (s *Server) BroadCast(user *User, msg string) {
-	sendMsg := "[" + user.Addr + "] " + user.Name + ": " + msg + "\n"
-	s.Message <- sendMsg
+	s.Message <- "[" + user.Addr + "] " + user.Name + ": " + msg + "\n"
 }
 
 func (s *Server) Handler(conn net.Conn) {
@@ -82,7 +81,7 @@ func (s *Server) Handler(conn net.Conn) {
 		select {
 		case <-isAlive:
 			// do nothing to go to next case, then update timer
-		case <-time.After(time.Second * 10):
+		case <-time.After(time.Second * 300):
 			conn.Write([]byte("you are kicked because of timeout\n"))
 
 			conn.Close()
