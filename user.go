@@ -48,8 +48,23 @@ func (u *User) Offline() {
 	u.server.BroadCast(u, "is offline")
 }
 
+func (u *User) SendMessage(user *User, msg string) {
+	user.conn.Write([]byte(msg))
+}
+
 func (u *User) DoMessage(msg string) {
-	u.server.BroadCast(u, msg)
+	if msg == "who" {
+		// list online users
+		u.server.mapLock.Lock()
+		for _, user := range u.server.OnlineMap {
+			onlineMsg := "[" + user.Addr + "]" + user.Name + ": " + "is online\n"
+			// u.SendMessage(u, onlineMsg)
+			u.C <- onlineMsg
+		}
+		u.server.mapLock.Unlock()
+	} else {
+		u.server.BroadCast(u, msg)
+	}
 }
 
 // listen current user channel and send msg to client
